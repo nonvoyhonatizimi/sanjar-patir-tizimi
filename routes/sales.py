@@ -582,6 +582,7 @@ def driver_payments():
     """Haydovchi to'lovlari - faqat oldingi smenalar qarz to'lovlari"""
     from datetime import date, datetime, timedelta
     from models import uz_datetime
+    from sqlalchemy.orm import joinedload
     
     # MUHIM: Faqat "Smena yopish" bosilganda yangilanadi
     # Avtomatik yangilanish O'CHIRILDI - ertalabki 5 da ham yangilanmaydi
@@ -606,7 +607,11 @@ def driver_payments():
     if last_closed_smena:
         # Faqat sale.smena < payment.smena bo'lgan to'lovlarni ko'rsatish
         # (Shu smenada non berildi + shu smenada pul olindi = Bugungi sotuvlarda)
-        query = DriverPayment.query.filter(
+        query = DriverPayment.query.options(
+            joinedload(DriverPayment.driver),
+            joinedload(DriverPayment.sale),
+            joinedload(DriverPayment.mijoz)
+        ).filter(
             DriverPayment.sale.has(Sale.smena < DriverPayment.smena),
             DriverPayment.status == 'tolandi'
         )
