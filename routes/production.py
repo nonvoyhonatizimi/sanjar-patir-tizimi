@@ -254,68 +254,79 @@ def add_oven():
 @login_required
 def add_oven_transfer():
     """Tandirchi haydovchiga non o'tkazish"""
+    import traceback
+    
     # Faqat tandirchi yoki admin qila oladi
     if current_user.rol != 'admin' and (not current_user.employee or current_user.employee.lavozim != 'Tandirchi'):
         flash('Bu funksiya faqat tandirchi uchun!', 'error')
         return redirect(url_for('production.list_oven'))
     
     if request.method == 'POST':
-        from_xodim_id = request.form.get('from_xodim_id')
-        to_xodim_id = request.form.get('to_xodim_id')
-        
-        # 4 ta non turini olish
-        non_turlar = []
-        for i in range(1, 5):
-            non_turi = request.form.get(f'non_turi_{i}', '')
-            non_miqdor = int(request.form.get(f'non_miqdor_{i}', 0) or 0)
-            if non_turi and non_miqdor > 0:
-                non_turlar.append((non_turi, non_miqdor))
-        
-        if not non_turlar:
-            flash('Kamida bitta non turi va miqdor kiriting!', 'error')
-            return redirect(url_for('production.add_oven_transfer'))
-        
-        # Yangi o'tkazish yaratish
-        new_transfer = BreadTransfer(
-            sana=datetime.now().date(),
-            from_xodim_id=from_xodim_id,
-            to_xodim_id=to_xodim_id,
-            from_turi='tandirchi'
-        )
-        
-        # Non turlarini qo'shish
-        for i, (turi, miqdor) in enumerate(non_turlar[:4], 1):
-            setattr(new_transfer, f'non_turi_{i}', turi)
-            setattr(new_transfer, f'non_miqdor_{i}', miqdor)
-        
-        db.session.add(new_transfer)
-        db.session.commit()
-        
-        # Haydovchi inventoryga non qo'shish
-        for i, (turi, miqdor) in enumerate(non_turlar[:4], 1):
-            if turi and miqdor > 0:
-                # Mavjud inventoryni tekshirish
-                inventory = DriverInventory.query.filter_by(
-                    driver_id=to_xodim_id,
-                    non_turi=turi,
-                    sana=datetime.now().date()
-                ).first()
-                
-                if inventory:
-                    inventory.miqdor += miqdor
-                    inventory.updated_at = uz_datetime()
-                else:
-                    new_inventory = DriverInventory(
+        try:
+            from_xodim_id = request.form.get('from_xodim_id')
+            to_xodim_id = request.form.get('to_xodim_id')
+            
+            # 4 ta non turini olish
+            non_turlar = []
+            for i in range(1, 5):
+                non_turi = request.form.get(f'non_turi_{i}', '')
+                non_miqdor = int(request.form.get(f'non_miqdor_{i}', 0) or 0)
+                if non_turi and non_miqdor > 0:
+                    non_turlar.append((non_turi, non_miqdor))
+            
+            if not non_turlar:
+                flash('Kamida bitta non turi va miqdor kiriting!', 'error')
+                return redirect(url_for('production.add_oven_transfer'))
+            
+            # Yangi o'tkazish yaratish
+            new_transfer = BreadTransfer(
+                sana=datetime.now().date(),
+                from_xodim_id=from_xodim_id,
+                to_xodim_id=to_xodim_id,
+                from_turi='tandirchi'
+            )
+            
+            # Non turlarini qo'shish
+            for i, (turi, miqdor) in enumerate(non_turlar[:4], 1):
+                setattr(new_transfer, f'non_turi_{i}', turi)
+                setattr(new_transfer, f'non_miqdor_{i}', miqdor)
+            
+            db.session.add(new_transfer)
+            db.session.commit()
+            
+            # Haydovchi inventoryga non qo'shish
+            for i, (turi, miqdor) in enumerate(non_turlar[:4], 1):
+                if turi and miqdor > 0:
+                    # Mavjud inventoryni tekshirish
+                    inventory = DriverInventory.query.filter_by(
                         driver_id=to_xodim_id,
                         non_turi=turi,
-                        miqdor=miqdor,
                         sana=datetime.now().date()
-                    )
-                    db.session.add(new_inventory)
-        
-        db.session.commit()
-        flash('Non o\'tkazish muvaffaqiyatli saqlandi!', 'success')
-        return redirect(url_for('production.list_oven'))
+                    ).first()
+                    
+                    if inventory:
+                        inventory.miqdor += miqdor
+                        inventory.updated_at = uz_datetime()
+                    else:
+                        new_inventory = DriverInventory(
+                            driver_id=to_xodim_id,
+                            non_turi=turi,
+                            miqdor=miqdor,
+                            sana=datetime.now().date()
+                        )
+                        db.session.add(new_inventory)
+            
+            db.session.commit()
+            flash('Non o\'tkazish muvaffaqiyatli saqlandi!', 'success')
+            return redirect(url_for('production.list_oven'))
+            
+        except Exception as e:
+            db.session.rollback()
+            error_msg = f"Xato: {str(e)}"
+            print(f"[ERROR] Oven transfer: {error_msg}")
+            print(traceback.format_exc())
+            flash(error_msg, 'error')
+            return redirect(url_for('production.add_oven_transfer'))
     
     # Tandirchilar va haydovchilarni olish
     tandirchilar = Employee.query.filter_by(lavozim='Tandirchi', status='faol').all()
