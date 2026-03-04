@@ -14,13 +14,15 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nonvoyhona-secret-key-123')
 
 # Database configuration - uses DATABASE_URL environment variable
-# Render Internal Database (PostgreSQL)
+# Render Internal Database (PostgreSQL with pg8000 driver)
 DATABASE_URL = os.environ.get('DATABASE_URL', 
-    'postgresql://nonvoyhonatizimi_user:JIPK1bBsLGGiQI04QfCG70cVbPT2VvDb@dpg-d6juhpntskes73b5drl0-a/nonvoyhonatizimi')
+    'postgresql+pg8000://nonvoyhonatizimi_user:JIPK1bBsLGGiQI04QfCG70cVbPT2VvDb@dpg-d6juhpntskes73b5drl0-a/nonvoyhonatizimi')
 
-# Fix Render's postgres:// to postgresql://
+# Fix Render's postgres:// to postgresql+pg8000://
 if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+pg8000://', 1)
+elif DATABASE_URL.startswith('postgresql://'):
+    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+pg8000://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 
