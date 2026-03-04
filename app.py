@@ -1,27 +1,33 @@
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_migrate import Migrate
 from models import db, User, Log, Sale, BreadMaking, Customer, Employee
 from sqlalchemy import func
 from datetime import datetime
 
+# Load environment variables from .env file for local development
+from dotenv import load_dotenv
+load_dotenv()
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nonvoyhona-secret-key-123')
 
-# Database configuration - supports both SQLite (local) and PostgreSQL (production)
-database_url = os.environ.get('DATABASE_URL')
-if database_url:
-    # Fix Render's postgres:// to postgresql://
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    # Local development with SQLite
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///nonvoyhona.db'
+# Database configuration - uses DATABASE_URL environment variable
+# Render Internal Database (PostgreSQL)
+DATABASE_URL = os.environ.get('DATABASE_URL', 
+    'postgresql://nonvoyhonatizimi_user:JIPK1bBsLGGiQI04QfCG70cVbPT2VvDb@dpg-d6juhpntskes73b5drl0-a/nonvoyhonatizimi')
+
+# Fix Render's postgres:// to postgresql://
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)

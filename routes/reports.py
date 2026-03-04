@@ -449,15 +449,21 @@ def close_day():
     )
     db.session.add(new_day_status)
     
-    # Haydovchi qoldiqlarini tozalash (smena yopilganda 0 dan boshlanadi)
-    DriverInventory.query.filter(DriverInventory.sana == today).delete()
+    # 1. BUGUNGI SOTUVLARNI TOZALASH (faqat bugungi sana bo'yicha)
+    from models import Sale
+    deleted_sales = Sale.query.filter(Sale.sana == today).delete()
+    print(f"[DEBUG] O'chirilgan sotuvlar: {deleted_sales}")
     
-    # Haydovchi to'lovlarini tozalash (smena yopilganda 0 dan boshlanadi)
+    # 2. QARZ TO'LOVLARINI TOZALASH (bugungi kunning to'lovlari)
     from models import DriverPayment
-    DriverPayment.query.filter(
-        db.func.date(DriverPayment.created_at) == today,
-        DriverPayment.smena < current_smena
+    deleted_payments = DriverPayment.query.filter(
+        db.func.date(DriverPayment.created_at) == today
     ).delete()
+    print(f"[DEBUG] O'chirilgan qarz to'lovlari: {deleted_payments}")
+    
+    # 3. Haydovchi qoldiqlarini tozalash (faqat bugungi)
+    deleted_inventory = DriverInventory.query.filter(DriverInventory.sana == today).delete()
+    print(f"[DEBUG] O'chirilgan haydovchi qoldiqlari: {deleted_inventory}")
     
     db.session.commit()
     
