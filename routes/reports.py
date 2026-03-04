@@ -427,11 +427,17 @@ def close_day():
         return redirect(url_for('reports.daily_sales'))
     
     from datetime import date
+    from models import uz_datetime
     today = date.today()
     
-    # Oxirgi smena raqamini aniqlash
+    # DEBUG: Oxirgi smenani tekshirish
     last_smena = DayStatus.query.filter_by(sana=today).order_by(DayStatus.smena.desc()).first()
+    print(f"[DEBUG] last_smena: {last_smena}")
+    if last_smena:
+        print(f"[DEBUG] last_smena.smena: {last_smena.smena}")
+    
     current_smena = last_smena.smena + 1 if last_smena else 1
+    print(f"[DEBUG] current_smena: {current_smena}")
     
     # Yangi smena yaratish (eski smenani yopib, yangisini ochish)
     new_day_status = DayStatus(
