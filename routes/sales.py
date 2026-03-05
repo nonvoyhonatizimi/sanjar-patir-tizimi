@@ -119,7 +119,8 @@ Xodim: {sale_data['xodim']}
 @sales_bp.route('/')
 @login_required
 def list_sales():
-    sales = Sale.query.order_by(Sale.sana.desc()).all()
+    sales = Sale.query.order_by(Sale.id.desc()).all()
+    print(f"DEBUG: Jami sotuvlar soni: {len(sales)}")  # Debug log
     # Tandirchi o'tkazishlarini ham olish
     tandir_transfers = BreadTransfer.query.filter_by(from_turi='tandirchi').order_by(BreadTransfer.created_at.desc()).all()
     # Haydovchi o'tkazishlarini faqat admin uchun olish
