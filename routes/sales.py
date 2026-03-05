@@ -427,10 +427,11 @@ def delete_sale(id):
         if cash_entry:
             db.session.delete(cash_entry)
     
-    # Delete related driver payment if exists
+    # Delete related driver payment if exists (avval o'chirish kerak)
     driver_payment = DriverPayment.query.filter_by(sale_id=sale.id).first()
     if driver_payment:
         db.session.delete(driver_payment)
+        db.session.flush()  # Darhol o'chirishni qo'llash
     
     db.session.delete(sale)
     db.session.commit()
