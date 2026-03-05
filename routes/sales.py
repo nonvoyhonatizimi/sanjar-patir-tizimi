@@ -126,7 +126,10 @@ def list_sales():
     haydovchi_transfers = None
     if current_user.rol == 'admin':
         haydovchi_transfers = BreadTransfer.query.filter_by(from_turi='haydovchi').order_by(BreadTransfer.created_at.desc()).all()
-    return render_template('sales/list.html', sales=sales, tandir_transfers=tandir_transfers, haydovchi_transfers=haydovchi_transfers)
+    # Haydovchi qoldiqlarini olish (tarqatish uchun non qoldig'i)
+    from models import DriverInventory
+    driver_inventory = DriverInventory.query.order_by(DriverInventory.driver_id, DriverInventory.non_turi).all()
+    return render_template('sales/list.html', sales=sales, tandir_transfers=tandir_transfers, haydovchi_transfers=haydovchi_transfers, driver_inventory=driver_inventory)
 
 @sales_bp.route('/pay-debt/<int:sale_id>', methods=['GET', 'POST'])
 @login_required
