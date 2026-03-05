@@ -350,13 +350,14 @@ def daily_sales():
     # SANA FILTRI OLIB TASHILANDI - faqat smena bo'yicha ishlaydi
     # Ertalabki 5 da avtomatik yangilanish O'CHIRILDI
     
-    # Oxirgi yopilgan smenani topish (faqat admin "Smena yopish" bosganda yopiladi)
-    last_closed_smena = DayStatus.query.filter_by(status='yopiq').order_by(DayStatus.id.desc()).first()
+    # Oxirgi ochiq smenani topish
+    open_smena = DayStatus.query.filter_by(status='ochiq').order_by(DayStatus.id.desc()).first()
     
-    # Agar smena yopilgan bo'lsa, shu smenadan keyingi sotuvlarni olish
-    if last_closed_smena:
-        current_smena = last_closed_smena.smena + 1
+    # Agar ochiq smena bo'lsa, shu smenadan boshlab olish
+    if open_smena:
+        current_smena = open_smena.smena
     else:
+        # Ochiq smena yo'q - barcha sotuvlarni ko'rsatish
         current_smena = 1
     
     # Haydovchi filter
