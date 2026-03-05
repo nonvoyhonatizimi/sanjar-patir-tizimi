@@ -431,8 +431,10 @@ def delete_sale(id):
     driver_payment = DriverPayment.query.filter_by(sale_id=sale.id).first()
     if driver_payment:
         db.session.delete(driver_payment)
-        db.session.flush()  # Darhol o'chirishni qo'llash
+        db.session.commit()  # Avval DriverPayment ni saqlash
     
+    # Endi sotuvni o'chirish
+    sale = Sale.query.get_or_404(id)  # Yangidan olish (session yangilandi)
     db.session.delete(sale)
     db.session.commit()
     flash('Sotuv ma\'lumoti o\'chirildi', 'success')
