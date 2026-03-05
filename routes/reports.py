@@ -457,15 +457,22 @@ def close_day():
     last_smena = DayStatus.query.filter_by(sana=today).order_by(DayStatus.smena.desc()).first()
     current_smena = last_smena.smena + 1 if last_smena else 1
     
-    # Yangi smena yaratish (eski smenani yopib, yangisini ochish)
-    new_day_status = DayStatus(
+    # Eski smenani yopish (agar ochiq bo'lsa)
+    open_smena = DayStatus.query.filter_by(status='ochiq').first()
+    if open_smena:
+        open_smena.status = 'yopiq'
+        open_smena.yopilgan_vaqt = uz_datetime()
+        open_smena.yopgan_admin = current_user.ism
+    
+    # Yangi smena yaratish (ochiq)
+    new_smena = DayStatus(
         sana=today,
         smena=current_smena,
-        status='yopiq',
-        yopilgan_vaqt=uz_datetime(),
-        yopgan_admin=current_user.ism
+        status='ochiq',
+        yopilgan_vaqt=None,
+        yopgan_admin=None
     )
-    db.session.add(new_day_status)
+    db.session.add(new_smena)
     
     # Haydovchi qoldiqlarini tozalash (smena yopilganda 0 dan boshlanadi)
     DriverInventory.query.filter(DriverInventory.sana == today).delete()
