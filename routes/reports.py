@@ -470,16 +470,18 @@ def close_day():
     from datetime import date
     today = date.today()
     
-    # Oxirgi smena raqamini aniqlash
-    last_smena = DayStatus.query.filter_by(sana=today).order_by(DayStatus.smena.desc()).first()
-    current_smena = last_smena.smena + 1 if last_smena else 1
+    # Hozirgi ochiq smenani topish
+    open_smena = DayStatus.query.filter_by(status='ochiq').order_by(DayStatus.id.desc()).first()
     
-    # Eski smenani yopish (agar ochiq bo'lsa)
-    open_smena = DayStatus.query.filter_by(status='ochiq').first()
     if open_smena:
+        # Ochiq smena bor - uni yopish va yangi smena yaratish
+        current_smena = open_smena.smena + 1
         open_smena.status = 'yopiq'
         open_smena.yopilgan_vaqt = uz_datetime()
         open_smena.yopgan_admin = current_user.ism
+    else:
+        # Ochiq smena yo'q - 1 dan boshlash
+        current_smena = 1
     
     # Yangi smena yaratish (ochiq)
     new_smena = DayStatus(
@@ -492,17 +494,13 @@ def close_day():
     db.session.add(new_smena)
     
     # Haydovchi qoldiqlarini tozalash (smena yopilganda 0 dan boshlanadi)
-    DriverInventory.query.filter(DriverInventory.sana == today).delete()
+    DriverInventory.query.delete()
     
-    # Haydovchi to'lovlarini tozalash (smena yopilganda 0 dan boshlanadi)
+    # Haydovchi to'lovlarini tozalash (eski smenalar)
     from models import DriverPayment
-    DriverPayment.query.filter(
-        db.func.date(DriverPayment.created_at) == today,
-        DriverPayment.smena < current_smena
-    ).delete()
+    DriverPayment.query.filter(DriverPayment.smena < current_smena).delete()
     
     db.session.commit()
     
-    flash('Smena yopildi! Bugungi sotuvlar va Qarz to\'lovlari yangi hisobotdan boshlandi.', 'success')
-    # Bugungi sotuvlar sahifasiga qaytadi (Qarz to'lovlari ham yangilandi)
+    flash(f'Smena {current_smena - 1} yopildi! Yangi smena: {current_smena}', 'success')
     return redirect(url_for('reports.daily_sales'))
