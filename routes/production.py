@@ -206,7 +206,11 @@ def edit_bread(id):
 @login_required
 def list_oven():
     ovens = Oven.query.order_by(Oven.sana.desc()).all()
-    return render_template('production/oven_list.html', ovens=ovens)
+    
+    # Tandirchi o'tkazishlarini olish
+    tandirchi_transfers = BreadTransfer.query.filter_by(from_turi='tandirchi').order_by(BreadTransfer.created_at.desc()).all()
+    
+    return render_template('production/oven_list.html', ovens=ovens, tandirchi_transfers=tandirchi_transfers)
 
 @production_bp.route('/oven/add', methods=['GET', 'POST'])
 @login_required
