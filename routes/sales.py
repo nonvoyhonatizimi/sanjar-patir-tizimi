@@ -128,8 +128,29 @@ def list_sales():
     if current_user.rol == 'admin':
         haydovchi_transfers = BreadTransfer.query.filter_by(from_turi='haydovchi').order_by(BreadTransfer.created_at.desc()).all()
     # Haydovchi qoldiqlarini olish (tarqatish uchun non qoldig'i)
-    from models import DriverInventory
-    driver_inventory = DriverInventory.query.order_by(DriverInventory.driver_id, DriverInventory.non_turi).all()
+    # Non turini guruhlash va jami miqdorni hisoblash
+    from models import DriverInventory, Employee
+    from sqlalchemy import func
+    
+    inventory_grouped = db.session.query(
+        DriverInventory.driver_id,
+        DriverInventory.non_turi,
+        func.sum(DriverInventory.miqdor).label('miqdor')
+    ).group_by(
+        DriverInventory.driver_id,
+        DriverInventory.non_turi
+    ).all()
+    
+    # Driver ma'lumotlarini qo'shish
+    driver_inventory = []
+    for item in inventory_grouped:
+        driver = Employee.query.get(item.driver_id)
+        driver_inventory.append({
+            'non_turi': item.non_turi,
+            'miqdor': item.miqdor,
+            'driver': driver
+        })
+    
     return render_template('sales/list.html', sales=sales, tandir_transfers=tandir_transfers, haydovchi_transfers=haydovchi_transfers, driver_inventory=driver_inventory)
 
 @sales_bp.route('/pay-debt/<int:sale_id>', methods=['GET', 'POST'])
