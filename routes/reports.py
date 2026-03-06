@@ -354,12 +354,14 @@ def daily_sales():
     # Oxirgi ochiq smenani topish
     open_smena = DayStatus.query.filter_by(status='ochiq').order_by(DayStatus.id.desc()).first()
     
-    # Agar ochiq smena bo'lsa, shu smenadan boshlab olish
+    # Agar ochiq smena bo'lsa, FAQAT shu smena sotuvlarini ko'rsatish
     if open_smena:
         current_smena = open_smena.smena
+        print(f"[DEBUG] Ochiq smena: {current_smena}")
     else:
-        # Ochiq smena yo'q - barcha sotuvlarni ko'rsatish
-        current_smena = 1
+        # Ochiq smena yo'q - hech narsa ko'rsatmaslik
+        current_smena = 999999  # Hech qanday sotuv bu smenada yo'q
+        print("[DEBUG] Ochiq smena TOPILMADI!")
     
     # Haydovchi filter
     driver_id = request.args.get('driver_id', '')
@@ -367,14 +369,13 @@ def daily_sales():
     # Barcha haydovchilar
     drivers = Employee.query.filter_by(lavozim='Haydovchi', status='faol').all()
     
-    # Sotuvlarni olish (faqat smena bo'yicha, SANA FILTRISIZ)
-    query = Sale.query.filter(Sale.smena >= current_smena)
+    # Sotuvlarni olish - FAQAT HOZIRGI SMENA (== emas >=)
+    query = Sale.query.filter(Sale.smena == current_smena)
     if driver_id:
-        # Agar haydovchi tanlangan bo'lsa, faqat o'sha haydovchining sotuvlari
-        # (Hozircha barcha sotuvlarni olamiz, keyin filtrlaymiz)
         pass
     
     sales = query.order_by(Sale.sana.desc()).all()
+    print(f"[DEBUG] Topilgan sotuvlar soni: {len(sales)}")
     
     # Haydovchi bo'yicha guruhlash
     driver_sales = {}
