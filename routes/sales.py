@@ -676,27 +676,20 @@ def driver_payments():
 @sales_bp.route('/driver-payments/refresh', methods=['POST'])
 @login_required
 def refresh_driver_payments():
-    """Qarz to'lovlari ro'yxatini tozalash"""
+    """Qarz to'lovlari ro'yxatini TO'LIQ tozalash"""
     if current_user.rol != 'admin':
         flash('Bu funksiya faqat admin uchun!', 'error')
         return redirect(url_for('sales.driver_payments'))
     
     from models import DriverPayment
     
-    # Barcha to'langan qarzlarni olish
-    all_payments = DriverPayment.query.filter(DriverPayment.status == 'tolandi').all()
-    
-    # Faqat qarz to'lovlari (Sale.smena != Payment.smena) ni o'chirish
-    deleted_count = 0
-    for p in all_payments:
-        if p.sale and p.sale.smena != p.smena:
-            db.session.delete(p)
-            deleted_count += 1
+    # BARCHA to'langan qarzlarni o'chirish - hech qanday shart yo'q!
+    deleted_count = DriverPayment.query.filter(DriverPayment.status == 'tolandi').delete()
     
     db.session.commit()
     
     print(f"[DEBUG refresh] {deleted_count} ta qarz to'lovi tozalandi")
-    flash(f'{deleted_count} ta qarz to\'lovi tozalandi!', 'success')
+    flash(f'{deleted_count} ta qarz to\'lovi tozalandi! Ro\'yxat bo\'sh.', 'success')
     return redirect(url_for('sales.driver_payments'))
 
 @sales_bp.route('/driver-payment/collect/<int:id>')
