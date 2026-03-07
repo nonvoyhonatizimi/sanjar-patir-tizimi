@@ -650,10 +650,11 @@ def driver_payments():
     
     payments = query.order_by(DriverPayment.collected_at.desc()).all()
     
-    # Faqat Sale.smena < DriverPayment.smena bo'lganlarni ajratish (Python da)
+    # Faqat Sale.smena != DriverPayment.smena bo'lganlarni ajratish (Python da)
+    # Ya'ni: turli smenada sotilgan va to'langan
     qarz_tolovlari = []
     for p in payments:
-        if p.sale and p.sale.smena < p.smena:
+        if p.sale and p.sale.smena != p.smena:
             qarz_tolovlari.append(p)
     
     print(f"[DEBUG] Jami to'langan: {len(payments)}, Qarz to'lovlari: {len(qarz_tolovlari)}")
