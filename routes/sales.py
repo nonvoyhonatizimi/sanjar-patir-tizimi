@@ -648,68 +648,49 @@ def delete_transfer(id):
 @sales_bp.route('/driver-payments')
 @login_required
 def driver_payments():
-    """Haydovchi to'lovlari - faqat oldingi smenalar qarz to'lovlari"""
+    """Haydovchi to'lovlari - to'langan qarzlar ro'yxati"""
     from datetime import date, datetime, timedelta
     from models import uz_datetime
     from sqlalchemy.orm import joinedload
     
-    # MUHIM: Faqat "Smena yopish" bosilganda yangilanadi
-    # Avtomatik yangilanish O'CHIRILDI - ertalabki 5 da ham yangilanmaydi
-    # O'zbekiston vaqtidan foydalanish (UTC+5)
-    
-    # Oxirgi yopilgan smenani topish (faqat admin "Smena yopish" bosganda yopiladi)
-    # Bu yerda avtomatik vaqt tekshiruvi YO'Q - faqat bazadagi smena holati asosida
-    last_closed_smena = DayStatus.query.filter_by(status='yopiq').order_by(DayStatus.yopilgan_vaqt.desc()).first()
-    
-    # Bugungi sana (O'zbekiston vaqti)
-    today = uz_datetime().date()
-    
     # Haydovchi filter
     driver_id = request.args.get('driver_id', '')
     
-    # Status filter (default: tolandi)
-    status = request.args.get('status', 'tolandi')
-    
-    # Query - QARZ TO'LOVLARI (boshqa smenada olingan to'lovlar)
-    # Qoida: Non berilgan smena < Pul olingan smena
-    # Yani: Smena A da non berildi, Smena B da pul olindi → Qarz to'lovlari
-    if last_closed_smena:
-        # Faqat sale.smena < payment.smena bo'lgan to'lovlarni ko'rsatish
-        # (Shu smenada non berildi + shu smenada pul olindi = Bugungi sotuvlarda)
-        query = DriverPayment.query.options(
-            joinedload(DriverPayment.driver),
-            joinedload(DriverPayment.sale),
-            joinedload(DriverPayment.mijoz)
-        ).filter(
-            DriverPayment.sale.has(Sale.smena < DriverPayment.smena),
-            DriverPayment.status == 'tolandi'
-        )
-    else:
-        # Smena hali yopilmagan - hech narsa ko'rsatilmaydi
-        query = DriverPayment.query.filter(False)
+    # Barcha to'langan qarzlarni olish (status = 'tolandi')
+    query = DriverPayment.query.options(
+        joinedload(DriverPayment.driver),
+        joinedload(DriverPayment.sale),
+        joinedload(DriverPayment.mijoz)
+    ).filter(
+        DriverPayment.status == 'tolandi'
+    )
     
     if driver_id:
         query = query.filter(DriverPayment.driver_id == driver_id)
     
-    if status:
-        query = query.filter(DriverPayment.status == status)
+    payments = query.order_by(DriverPayment.collected_at.desc()).all()
     
-    payments = query.order_by(DriverPayment.created_at.desc()).all()
+    # Faqat Sale.smena < DriverPayment.smena bo'lganlarni ajratish (Python da)
+    qarz_tolovlari = []
+    for p in payments:
+        if p.sale and p.sale.smena < p.smena:
+            qarz_tolovlari.append(p)
+    
+    print(f"[DEBUG] Jami to'langan: {len(payments)}, Qarz to'lovlari: {len(qarz_tolovlari)}")
     
     # Barcha haydovchilar (filter uchun)
     drivers = Employee.query.filter_by(lavozim='Haydovchi', status='faol').all()
     
     # Jami hisoblar
-    jami_kutilmoqda = sum([p.summa for p in payments if p.status == 'kutilmoqda'])
-    jami_tolandan = sum([p.summa for p in payments if p.status == 'tolandi'])
+    jami_tolangan = sum([float(p.summa) for p in qarz_tolovlari])
     
     return render_template('sales/driver_payments.html',
-                         payments=payments,
+                         payments=qarz_tolovlari,
                          drivers=drivers,
                          driver_id=driver_id,
-                         status=status,
-                         jami_kutilmoqda=jami_kutilmoqda,
-                         jami_tolandan=jami_tolandan)
+                         status='tolandi',
+                         jami_kutilmoqda=0,
+                         jami_tolandan=jami_tolangan)
 
 @sales_bp.route('/driver-payments/refresh', methods=['POST'])
 @login_required
