@@ -1,4 +1,5 @@
 import os
+import ssl
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
@@ -14,19 +15,36 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nonvoyhona-secret-key-123')
 
 # Database configuration - uses DATABASE_URL environment variable
-# Render Internal Database (PostgreSQL with pg8000 driver)
+# Neon.tech Database (PostgreSQL)
 DATABASE_URL = os.environ.get('DATABASE_URL', 
-    'postgresql+pg8000://nonvoyhonatizimi_user:JIPK1bBsLGGiQI04QfCG70cVbPT2VvDb@dpg-d6juhpntskes73b5drl0-a/nonvoyhonatizimi')
+    'postgresql://neondb_owner:npg_XoJBhMVNjQ23@ep-bitter-lab-ab82thfg-pooler.eu-west-2.aws.neon.tech/neondb')
 
-# Fix Render's postgres:// to postgresql+pg8000://
-if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+pg8000://', 1)
-elif DATABASE_URL.startswith('postgresql://'):
+# Remove query parameters that cause issues with pg8000 (like sslmode)
+if '?' in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.split('?')[0]
+
+# Ensure the prefix is always postgresql+pg8000://
+if DATABASE_URL.startswith('postgresql://'):
     DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+pg8000://', 1)
+elif DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+pg8000://', 1)
+elif not DATABASE_URL.startswith('postgresql+pg8000://'):
+    # Default to adding the driver if it's not there
+    DATABASE_URL = 'postgresql+pg8000://' + DATABASE_URL.split('://', 1)[-1]
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Neon/Production requires SSL. Configure SSL context for pg8000
+ssl_context = None
+if 'neon.tech' in DATABASE_URL or os.environ.get('RENDER'):
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}
+if ssl_context:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS']["connect_args"] = {"ssl_context": ssl_context}
 
 db.init_app(app)
 migrate = Migrate(app, db)

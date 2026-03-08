@@ -18,10 +18,11 @@
         <div class="row">
             {% if current_user.is_authenticated %}
             <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
-                <div class="text-center mb-4">
-                    <h4 class="fw-bold">NONVOYHONA</h4>
-                    <small class="text-muted">v3.0 Professional</small>
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar sidebar-glass collapse">
+                <div class="text-center py-4 mb-2">
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="img-fluid mb-3" style="max-width: 120px; border-radius: 50%;">
+                    <h4 class="fw-bold mb-0" style="color: #FFD700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">SANJAR PATIR</h4>
+                    <small class="text-white-50" style="font-size: 10px; letter-spacing: 2px;">PREMIUM BAKERY</small>
                 </div>
                 <ul class="nav flex-column">
                     {% if current_user.rol == 'admin' %}
@@ -139,9 +140,12 @@
             <!-- Main Content -->
             <main class="{% if current_user.is_authenticated %}col-md-9 ms-sm-auto col-lg-10{% else %}col-12{% endif %} px-md-4">
                 {% if current_user.is_authenticated %}
-                <nav class="navbar navbar-expand-lg mb-4 mt-2 rounded">
+                <nav class="navbar navbar-expand-lg glass-card mb-4 mt-3">
                     <div class="container-fluid">
-                        <span class="navbar-brand mb-0 h1 text-muted">{% block header_title %}Bosh sahifa{% endblock %}</span>
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="me-2" style="width: 30px; height: 30px; border-radius: 50%;">
+                            <span class="navbar-brand mb-0 h1 text-muted">{% block header_title %}Bosh sahifa{% endblock %}</span>
+                        </div>
                         <div class="d-flex align-items-center">
                             <span class="me-3">{{ current_user.ism }} ({{ current_user.rol }})</span>
                             <div class="dropdown">
